@@ -1,26 +1,102 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Kids Book Creator - Warm Theme (NO purple AI vibes!) */
+  
+  /* Primary - Terracotta (warm, creative energy) */
+  --color-primary: #E07A5F;
+  --color-primary-foreground: #FFFFFF;
+  
+  /* Secondary - Deep Slate (professional, grounded) */
+  --color-secondary: #3D405B;
+  --color-secondary-foreground: #FFFFFF;
+  
+  /* Accent - Sage Green (success, growth) */
+  --color-accent: #81B29A;
+  --color-accent-foreground: #1A1917;
+  
+  /* Backgrounds - Warm whites */
+  --color-background: #FDFBF7;
+  --color-foreground: #1A1917;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1A1917;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1A1917;
+  
+  /* Muted - Warm grays */
+  --color-muted: #F5F1EA;
+  --color-muted-foreground: #716C62;
+  
+  /* Borders */
+  --color-border: #E1DDD5;
+  --color-input: #E1DDD5;
+  --color-ring: #E07A5F;
+  
+  /* Semantic colors */
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+  
+  /* Chart colors (warm palette) */
+  --color-chart-1: #E07A5F;
+  --color-chart-2: #81B29A;
+  --color-chart-3: #F2CC8F;
+  --color-chart-4: #6B8CAE;
+  --color-chart-5: #3D405B;
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* Sidebar (same warm theme) */
+  --color-sidebar: #FDFBF7;
+  --color-sidebar-foreground: #1A1917;
+  --color-sidebar-primary: #E07A5F;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: #F5F1EA;
+  --color-sidebar-accent-foreground: #1A1917;
+  --color-sidebar-border: #E1DDD5;
+  --color-sidebar-ring: #E07A5F;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Font configuration */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 600;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom scrollbar (subtle, warm) */
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--color-muted);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C7C2B8;
+  }
 }
