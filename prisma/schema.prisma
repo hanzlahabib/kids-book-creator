@@ -1,0 +1,209 @@
+// Kids Book Creator - Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============ Phase 2: User & Auth ============
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // hashed with bcrypt
+  name          String?
+  image         String?
+  role          String    @default("user") // user, admin
+  
+  // Subscription
+  planId               String?
+  plan                 Plan?     @relation(fields: [planId], references: [id])
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?
+  subscriptionStatus   String?   // active, canceled, past_due, trialing
+  billingCycleStart    DateTime?
+  currentPeriodEnd     DateTime?
+  
+  // Credits
+  credits       Int       @default(0)
+  creditsUsed   Int       @default(0)
+  
+  // BYOK Settings
+  preferByok    Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  books         Book[]
+  generations   Generation[]
+  usageRecords  UsageRecord[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  
+  @@unique([identifier, token])
+}
+
+// ============ Phase 2: Subscription Plans ============
+model Plan {
+  id            String    @id @default(cuid())
+  name          String    // Free, Starter, Pro, Unlimited
+  slug          String    @unique
+  price         Int       // in cents, 0 for free
+  credits       Int       // monthly credits
+  features      String    // JSON array of features
+  limits        String    // JSON object of limits
+  stripePriceId String?
+  isActive      Boolean   @default(true)
+  displayOrder  Int       @default(0)
+  
+  users         User[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ============ Phase 2: API Keys (BYOK) ============
+model ApiKey {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      String    // openai, replicate, stability, fal
+  encryptedKey  String    // AES-256 encrypted key
+  keyLast4      String    // last 4 chars for display
+  name          String?   // user-friendly name
+  isValid       Boolean   @default(true)
+  lastUsed      DateTime?
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  
+  @@unique([userId, provider, keyLast4])
+  @@index([userId])
+}
+
+// ============ Phase 2: Usage Tracking ============
+model UsageRecord {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      String    // openai, replicate, stability, fal, credits
+  action        String    // generate, export
+  creditsUsed   Int       @default(0)
+  estimatedCost Float?    // estimated cost in USD for BYOK
+  metadata      String?   // JSON with additional data
+  mode          String    @default("credits") // credits, byok
+  createdAt     DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============ Existing Models (Updated) ============
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  theme       String?
+  ageGroup    String?
+  status      String   @default("draft") // draft, ready, exported
+  kdpAsin     String?
+  pageCount   Int      @default(0)
+  trimSize    String   @default("8.5x11")
+  
+  // Add user ownership
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  pages       Page[]
+  
+  @@index([userId])
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  bookId      String?
+  pageNumber  Int      @default(0)
+  imagePath   String
+  prompt      String?
+  theme       String?
+  style       String?  // coloring, tracing, activity
+  ageGroup    String?
+  createdAt   DateTime @default(now())
+  
+  book        Book?    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String   // coloring, tracing, activity, educational
+  theme       String
+  ageGroup    String
+  promptBase  String
+  previewPath String?
+  config      String?  // JSON config
+  isActive    Boolean  @default(true)
+  isPremium   Boolean  @default(false) // Gated by plan
+  createdAt   DateTime @default(now())
+}
+
+model Generation {
+  id          String   @id @default(cuid())
+  prompt      String
+  imagePath   String
+  theme       String?
+  style       String?
+  ageGroup    String?
+  status      String   @default("completed") // pending, completed, failed
+  
+  // Add user ownership and provider tracking
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider    String?  // openai, replicate, stability, fal
+  mode        String   @default("credits") // credits, byok
+  creditsUsed Int      @default(1)
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+}
