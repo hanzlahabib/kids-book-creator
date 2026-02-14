@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: app
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: app
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: app
+        run: pnpm test
+
+      - name: Build
+        working-directory: app
+        env:
+          DATABASE_URL: "file:./data/app.db"
+          NEXTAUTH_SECRET: "ci-test-secret-not-for-production"
+          NEXTAUTH_URL: "http://localhost:3003"
+          ENCRYPTION_KEY: "ci-test-encryption-key-32ch"
+          NEXT_PUBLIC_APP_URL: "http://localhost:3003"
+        run: pnpm build
