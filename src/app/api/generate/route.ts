@@ -3,42 +3,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
+import { generateLimiter, checkRateLimit } from '@/lib/rate-limit';
 import { getProvider, isValidProvider, type ProviderName } from '@/services/ai/providers';
 import { getRandomPrompts } from '@/services/ai/prompts';
 import type { Theme, AgeGroup } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 requests per minute per user/IP
+    const session = await auth();
+    const identifier = session?.user?.id || request.headers.get('x-forwarded-for') || 'anonymous';
+    const rateLimitResponse = await checkRateLimit(generateLimiter, 10, identifier);
+    if (rateLimitResponse) return rateLimitResponse;
+
     const body = await request.json();
-    const { 
-      theme, 
-      subject, 
-      ageGroup, 
-      quantity = 1, 
+    const {
+      theme,
+      subject,
+      ageGroup,
+      quantity = 1,
       style = 'coloring',
       provider: requestedProvider = 'openai',
       mode = 'credits', // 'credits' or 'byok'
     } = body;
-    
+
     if (!theme || !ageGroup) {
       return NextResponse.json(
         { error: 'Missing required fields: theme, ageGroup' },
         { status: 400 }
       );
     }
-    
-    // Get session (optional for backward compatibility)
-    const session = await auth();
+
+    // Use session from rate limit check above
     const userId = session?.user?.id;
-    
+
     // Determine provider and API key
     let providerName: ProviderName = 'openai';
     let apiKey: string | undefined;
-    
+
     if (isValidProvider(requestedProvider)) {
       providerName = requestedProvider;
     }
-    
+
     // Handle BYOK vs Credits mode
     if (mode === 'byok' && userId) {
       // Get user's API key for this provider
@@ -49,16 +55,16 @@ export async function POST(request: NextRequest) {
           isValid: true,
         },
       });
-      
+
       if (!userKey) {
         return NextResponse.json(
           { error: `No valid API key found for ${providerName}. Please add one in Settings.` },
           { status: 400 }
         );
       }
-      
+
       apiKey = decrypt(userKey.encryptedKey);
-      
+
       // Update key usage
       await prisma.apiKey.update({
         where: { id: userKey.id },
@@ -73,25 +79,25 @@ export async function POST(request: NextRequest) {
         where: { id: userId },
         include: { plan: true },
       });
-      
+
       if (!user) {
         return NextResponse.json(
           { error: 'User not found' },
           { status: 404 }
         );
       }
-      
+
       if (user.credits < quantity) {
         return NextResponse.json(
-          { 
-            error: 'Insufficient credits', 
+          {
+            error: 'Insufficient credits',
             credits: user.credits,
             required: quantity,
           },
           { status: 402 }
         );
       }
-      
+
       // Check plan limits for batch generation
       const limits = user.plan ? JSON.parse(user.plan.limits || '{}') : {};
       if (quantity > 1 && !limits.batchGeneration) {
@@ -100,22 +106,22 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         );
       }
-      
+
       if (limits.batchSize && quantity > limits.batchSize) {
         return NextResponse.json(
           { error: `Batch size limited to ${limits.batchSize} images` },
           { status: 400 }
         );
       }
-      
+
       // Use system API key
       apiKey = undefined; // Provider will use env var
     }
-    
+
     // Get the provider
     const providerInstance = getProvider(providerName);
     const results = [];
-    
+
     if (quantity === 1 && subject) {
       // Single generation with specific subject
       const result = await providerInstance.generateImage(
@@ -127,7 +133,7 @@ export async function POST(request: NextRequest) {
         },
         apiKey
       );
-      
+
       if (result.success) {
         // Save to generation history
         await prisma.generation.create({
@@ -144,7 +150,7 @@ export async function POST(request: NextRequest) {
             creditsUsed: mode === 'credits' ? 1 : 0,
           },
         });
-        
+
         // Record usage
         if (userId) {
           await prisma.usageRecord.create({
@@ -158,7 +164,7 @@ export async function POST(request: NextRequest) {
               metadata: JSON.stringify({ theme, style, ageGroup }),
             },
           });
-          
+
           // Deduct credits if using credits mode
           if (mode === 'credits') {
             await prisma.user.update({
@@ -171,14 +177,14 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       results.push(result);
     } else {
       // Batch generation
-      const subjects = subject 
+      const subjects = subject
         ? Array(quantity).fill(subject)
         : getRandomPrompts(theme as Theme, quantity);
-      
+
       for (const subj of subjects) {
         const result = await providerInstance.generateImage(
           {
@@ -189,7 +195,7 @@ export async function POST(request: NextRequest) {
           },
           apiKey
         );
-        
+
         if (result.success) {
           await prisma.generation.create({
             data: {
@@ -205,7 +211,7 @@ export async function POST(request: NextRequest) {
               creditsUsed: mode === 'credits' ? 1 : 0,
             },
           });
-          
+
           if (userId) {
             await prisma.usageRecord.create({
               data: {
@@ -217,7 +223,7 @@ export async function POST(request: NextRequest) {
                 mode,
               },
             });
-            
+
             if (mode === 'credits') {
               await prisma.user.update({
                 where: { id: userId },
@@ -229,14 +235,14 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-        
+
         results.push(result);
-        
+
         // Small delay between requests
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
-    
+
     // Get updated credit balance
     let credits: number | undefined;
     if (userId && mode === 'credits') {
@@ -246,7 +252,7 @@ export async function POST(request: NextRequest) {
       });
       credits = user?.credits;
     }
-    
+
     return NextResponse.json({
       success: true,
       results,
@@ -272,21 +278,21 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const theme = searchParams.get('theme');
-    
+
     const where: {
       theme?: string;
       userId?: string;
     } = {};
-    
+
     if (theme) where.theme = theme;
     if (session?.user?.id) where.userId = session.user.id;
-    
+
     const generations = await prisma.generation.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
-    
+
     return NextResponse.json({ generations });
   } catch (error) {
     console.error('Failed to fetch generations:', error);
