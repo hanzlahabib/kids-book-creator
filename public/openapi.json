@@ -1,0 +1,1636 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Kids Book Creator API",
+        "description": "AI-powered children's activity book creation platform for Amazon KDP",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Hanzla Habib",
+            "url": "https://github.com/hanzlahabib/kids-book-creator"
+        },
+        "license": {
+            "name": "MIT"
+        }
+    },
+    "servers": [
+        {
+            "url": "http://localhost:3003/api",
+            "description": "Local development"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Authentication & registration"
+        },
+        {
+            "name": "Books",
+            "description": "Book management"
+        },
+        {
+            "name": "Pages",
+            "description": "Page management"
+        },
+        {
+            "name": "Generate",
+            "description": "AI image generation"
+        },
+        {
+            "name": "Export",
+            "description": "PDF export"
+        },
+        {
+            "name": "Templates",
+            "description": "Template library"
+        },
+        {
+            "name": "Plans",
+            "description": "Subscription plans"
+        },
+        {
+            "name": "Credits",
+            "description": "Credit balance & usage"
+        },
+        {
+            "name": "Keys",
+            "description": "BYOK API key management"
+        },
+        {
+            "name": "Subscription",
+            "description": "Subscription & billing"
+        },
+        {
+            "name": "Stats",
+            "description": "Dashboard statistics"
+        },
+        {
+            "name": "Admin",
+            "description": "Admin-only operations"
+        }
+    ],
+    "paths": {
+        "/auth/signup": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register new account",
+                "description": "Create a new user account with email and password. Rate limited to 5 req/min per IP.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignupRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Account created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SignupResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "409": {
+                        "description": "Email already exists"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/books": {
+            "get": {
+                "tags": [
+                    "Books"
+                ],
+                "summary": "List all books",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of books",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "books": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Book"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Create a new book",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateBookRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Book created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "book": {
+                                            "$ref": "#/components/schemas/Book"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/books/{id}": {
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Get book details",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book with pages",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "book": {
+                                            "$ref": "#/components/schemas/Book"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Book not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Update a book",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateBookRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Book updated"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Books"
+                ],
+                "summary": "Delete a book",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Book deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/books/{id}/pages": {
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    },
+                    "description": "Book ID"
+                }
+            ],
+            "post": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Add pages to a book",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "pages"
+                                ],
+                                "properties": {
+                                    "pages": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "imagePath"
+                                            ],
+                                            "properties": {
+                                                "imagePath": {
+                                                    "type": "string"
+                                                },
+                                                "prompt": {
+                                                    "type": "string"
+                                                },
+                                                "theme": {
+                                                    "type": "string"
+                                                },
+                                                "style": {
+                                                    "type": "string"
+                                                },
+                                                "ageGroup": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pages added"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Reorder pages",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "pageOrder"
+                                ],
+                                "properties": {
+                                    "pageOrder": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "Page IDs in desired order"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pages reordered"
+                    }
+                }
+            }
+        },
+        "/pages/{id}": {
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Get page details",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "page": {
+                                            "$ref": "#/components/schemas/Page"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Update a page",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "pageNumber": {
+                                        "type": "integer",
+                                        "minimum": 1
+                                    },
+                                    "prompt": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Page updated"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Delete a page",
+                "description": "Deletes the page, removes the image file, and renumbers remaining pages.",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Page deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found"
+                    }
+                }
+            }
+        },
+        "/generate": {
+            "post": {
+                "tags": [
+                    "Generate"
+                ],
+                "summary": "Generate AI images",
+                "description": "Generate activity book pages using AI. Rate limited to 10 req/min per user.",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GenerateRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Images generated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GenerateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "402": {
+                        "description": "Insufficient credits"
+                    },
+                    "403": {
+                        "description": "Feature requires higher plan"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Generate"
+                ],
+                "summary": "Get generation history",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
+                    },
+                    {
+                        "name": "theme",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Generation history"
+                    }
+                }
+            }
+        },
+        "/export": {
+            "post": {
+                "tags": [
+                    "Export"
+                ],
+                "summary": "Export book as KDP-ready PDF",
+                "description": "Exports a book as a ZIP containing interior PDF, cover PDF, and KDP upload instructions. Rate limited to 5 req/min.",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExportRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ZIP file download",
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/ValidationError"
+                    },
+                    "404": {
+                        "description": "Book not found"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/templates": {
+            "get": {
+                "tags": [
+                    "Templates"
+                ],
+                "summary": "List all templates",
+                "responses": {
+                    "200": {
+                        "description": "Template list"
+                    }
+                }
+            }
+        },
+        "/plans": {
+            "get": {
+                "tags": [
+                    "Plans"
+                ],
+                "summary": "List subscription plans",
+                "responses": {
+                    "200": {
+                        "description": "Plans list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "plans": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Plan"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stats": {
+            "get": {
+                "tags": [
+                    "Stats"
+                ],
+                "summary": "Dashboard statistics",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Statistics",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StatsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/credits": {
+            "get": {
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Get credit balance",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "history",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 50
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Credit balance",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreditsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Credits"
+                ],
+                "summary": "Deduct credits",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "amount": {
+                                        "type": "integer",
+                                        "default": 1
+                                    },
+                                    "action": {
+                                        "type": "string",
+                                        "default": "generate"
+                                    },
+                                    "provider": {
+                                        "type": "string",
+                                        "default": "credits"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Credits deducted"
+                    },
+                    "402": {
+                        "description": "Insufficient credits"
+                    }
+                }
+            }
+        },
+        "/keys": {
+            "get": {
+                "tags": [
+                    "Keys"
+                ],
+                "summary": "List API keys (masked)",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API keys list"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Keys"
+                ],
+                "summary": "Add a new API key",
+                "description": "Validates the key by testing the provider connection before saving.",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateKeyRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Key saved"
+                    },
+                    "400": {
+                        "description": "Invalid key"
+                    },
+                    "409": {
+                        "description": "Key already exists"
+                    }
+                }
+            }
+        },
+        "/keys/{id}": {
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "delete": {
+                "tags": [
+                    "Keys"
+                ],
+                "summary": "Delete an API key",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Key deleted"
+                    }
+                }
+            }
+        },
+        "/subscription": {
+            "get": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Get current subscription",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription details"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Update subscription preferences",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "preferByok": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    }
+                }
+            }
+        },
+        "/subscription/checkout": {
+            "post": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Create Stripe checkout session",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Checkout URL",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "format": "uri"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Stripe not configured"
+                    }
+                }
+            }
+        },
+        "/subscription/portal": {
+            "post": {
+                "tags": [
+                    "Subscription"
+                ],
+                "summary": "Create Stripe customer portal session",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Portal URL",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "url": {
+                                            "type": "string",
+                                            "format": "uri"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List all users (paginated)",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated user list"
+                    },
+                    "403": {
+                        "description": "Admin only"
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}": {
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get user details",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User details"
+                    },
+                    "403": {
+                        "description": "Admin only"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Update user (role, credits, plan)",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AdminUpdateUserRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated"
+                    },
+                    "403": {
+                        "description": "Admin only"
+                    }
+                }
+            }
+        },
+        "/admin/analytics": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Platform analytics",
+                "description": "Returns user stats, generation counts, book counts, MRR, and usage by provider.",
+                "security": [
+                    {
+                        "session": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analytics data"
+                    },
+                    "403": {
+                        "description": "Admin only"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "session": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "next-auth.session-token",
+                "description": "NextAuth session cookie"
+            }
+        },
+        "responses": {
+            "ValidationError": {
+                "description": "Validation failed",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Validation failed"
+                                },
+                                "details": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "field": {
+                                                "type": "string"
+                                            },
+                                            "message": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "RateLimited": {
+                "description": "Rate limit exceeded",
+                "headers": {
+                    "X-RateLimit-Limit": {
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "X-RateLimit-Remaining": {
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "Retry-After": {
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string",
+                                    "example": "Too many requests"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "SuccessResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                }
+            },
+            "SignupRequest": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 6
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SignupResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "user": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "email": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "role": {
+                                "type": "string",
+                                "enum": [
+                                    "user",
+                                    "admin"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "Book": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "theme": {
+                        "type": "string"
+                    },
+                    "ageGroup": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "ready",
+                            "exported"
+                        ]
+                    },
+                    "pageCount": {
+                        "type": "integer"
+                    },
+                    "pages": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Page"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Page": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "bookId": {
+                        "type": "string"
+                    },
+                    "pageNumber": {
+                        "type": "integer"
+                    },
+                    "imagePath": {
+                        "type": "string"
+                    },
+                    "prompt": {
+                        "type": "string"
+                    },
+                    "theme": {
+                        "type": "string"
+                    },
+                    "style": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateBookRequest": {
+                "type": "object",
+                "required": [
+                    "title",
+                    "theme"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "theme": {
+                        "type": "string"
+                    },
+                    "ageGroup": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 1000
+                    }
+                }
+            },
+            "UpdateBookRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "theme": {
+                        "type": "string"
+                    },
+                    "ageGroup": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "draft",
+                            "ready",
+                            "exported"
+                        ]
+                    }
+                }
+            },
+            "GenerateRequest": {
+                "type": "object",
+                "required": [
+                    "theme",
+                    "ageGroup"
+                ],
+                "properties": {
+                    "theme": {
+                        "type": "string",
+                        "description": "Image theme"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "ageGroup": {
+                        "type": "string",
+                        "description": "Target age group"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "default": 1
+                    },
+                    "style": {
+                        "type": "string",
+                        "enum": [
+                            "coloring",
+                            "tracing",
+                            "educational",
+                            "drawing"
+                        ],
+                        "default": "coloring"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "openai",
+                            "replicate",
+                            "stability",
+                            "fal"
+                        ],
+                        "default": "openai"
+                    },
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "credits",
+                            "byok"
+                        ],
+                        "default": "credits"
+                    }
+                }
+            },
+            "GenerateResponse": {
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "imagePath": {
+                                    "type": "string"
+                                },
+                                "prompt": {
+                                    "type": "string"
+                                },
+                                "estimatedCost": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    },
+                    "generated": {
+                        "type": "integer"
+                    },
+                    "failed": {
+                        "type": "integer"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "mode": {
+                        "type": "string"
+                    },
+                    "credits": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExportRequest": {
+                "type": "object",
+                "required": [
+                    "bookId"
+                ],
+                "properties": {
+                    "bookId": {
+                        "type": "string"
+                    },
+                    "trimSize": {
+                        "type": "string",
+                        "enum": [
+                            "8.5x11",
+                            "8x10",
+                            "6x9"
+                        ],
+                        "default": "8.5x11"
+                    },
+                    "includePageNumbers": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "includeCover": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "coverTitle": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "coverAuthor": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "default": "Activity Books"
+                    },
+                    "coverBackText": {
+                        "type": "string",
+                        "maxLength": 500
+                    }
+                }
+            },
+            "Plan": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "integer",
+                        "description": "Price in cents"
+                    },
+                    "credits": {
+                        "type": "integer"
+                    },
+                    "features": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "limits": {
+                        "type": "object"
+                    }
+                }
+            },
+            "CreditsResponse": {
+                "type": "object",
+                "properties": {
+                    "credits": {
+                        "type": "integer"
+                    },
+                    "creditsUsed": {
+                        "type": "integer"
+                    },
+                    "maxCredits": {
+                        "type": "integer"
+                    },
+                    "planName": {
+                        "type": "string"
+                    },
+                    "billingCycleStart": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "history": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "StatsResponse": {
+                "type": "object",
+                "properties": {
+                    "stats": {
+                        "type": "object",
+                        "properties": {
+                            "totalBooks": {
+                                "type": "integer"
+                            },
+                            "totalPages": {
+                                "type": "integer"
+                            },
+                            "totalGenerations": {
+                                "type": "integer"
+                            },
+                            "exportedBooks": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "recentBooks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Book"
+                        }
+                    }
+                }
+            },
+            "CreateKeyRequest": {
+                "type": "object",
+                "required": [
+                    "provider",
+                    "key"
+                ],
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "openai",
+                            "replicate",
+                            "stability",
+                            "fal"
+                        ]
+                    },
+                    "key": {
+                        "type": "string",
+                        "maxLength": 500
+                    },
+                    "label": {
+                        "type": "string",
+                        "maxLength": 100
+                    }
+                }
+            },
+            "CheckoutRequest": {
+                "type": "object",
+                "required": [
+                    "planSlug"
+                ],
+                "properties": {
+                    "planSlug": {
+                        "type": "string",
+                        "description": "Plan slug (starter, pro, unlimited)"
+                    }
+                }
+            },
+            "AdminUpdateUserRequest": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "admin"
+                        ]
+                    },
+                    "credits": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "planId": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
