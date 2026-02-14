@@ -3,20 +3,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { encrypt, getLast4, maskKey } from '@/lib/encryption';
+import { validateBody, createApiKeySchema } from '@/lib/validations';
 import { getProvider, isValidProvider } from '@/services/ai/providers';
 
 // Get all user's API keys
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
+
     const keys = await prisma.apiKey.findMany({
       where: { userId: session.user.id },
       select: {
@@ -31,13 +32,13 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' },
     });
-    
+
     // Add masked key display
     const keysWithMask = keys.map(key => ({
       ...key,
       maskedKey: maskKey('x'.repeat(20) + key.keyLast4),
     }));
-    
+
     return NextResponse.json({ keys: keysWithMask });
   } catch (error) {
     console.error('Keys fetch error:', error);
@@ -52,42 +53,31 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    const body = await request.json();
-    const { provider, key, name } = body;
-    
-    if (!provider || !key) {
-      return NextResponse.json(
-        { error: 'Provider and key are required' },
-        { status: 400 }
-      );
-    }
-    
-    if (!isValidProvider(provider)) {
-      return NextResponse.json(
-        { error: 'Invalid provider' },
-        { status: 400 }
-      );
-    }
-    
+
+    // Validate input
+    const parsed = await validateBody(request, createApiKeySchema);
+    if (parsed.error) return parsed.error;
+
+    const { provider, key, label: name } = parsed.data;
+
     // Validate the key
     const providerInstance = getProvider(provider);
     const isValid = await providerInstance.testConnection(key);
-    
+
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid API key - could not connect to provider' },
         { status: 400 }
       );
     }
-    
+
     // Check for duplicate
     const keyLast4 = getLast4(key);
     const existing = await prisma.apiKey.findFirst({
@@ -97,17 +87,17 @@ export async function POST(request: NextRequest) {
         keyLast4,
       },
     });
-    
+
     if (existing) {
       return NextResponse.json(
         { error: 'This key already exists' },
         { status: 409 }
       );
     }
-    
+
     // Encrypt and store
     const encryptedKey = encrypt(key);
-    
+
     const apiKey = await prisma.apiKey.create({
       data: {
         userId: session.user.id,
@@ -126,7 +116,7 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
-    
+
     return NextResponse.json({
       success: true,
       key: {

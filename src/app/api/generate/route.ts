@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { generateLimiter, checkRateLimit } from '@/lib/rate-limit';
+import { validateBody, generateSchema } from '@/lib/validations';
 import { getProvider, isValidProvider, type ProviderName } from '@/services/ai/providers';
 import { getRandomPrompts } from '@/services/ai/prompts';
 import type { Theme, AgeGroup } from '@/types';
@@ -16,23 +17,19 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = await checkRateLimit(generateLimiter, 10, identifier);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await request.json();
+    // Validate input
+    const parsed = await validateBody(request, generateSchema);
+    if (parsed.error) return parsed.error;
+
     const {
       theme,
       subject,
       ageGroup,
-      quantity = 1,
-      style = 'coloring',
-      provider: requestedProvider = 'openai',
-      mode = 'credits', // 'credits' or 'byok'
-    } = body;
-
-    if (!theme || !ageGroup) {
-      return NextResponse.json(
-        { error: 'Missing required fields: theme, ageGroup' },
-        { status: 400 }
-      );
-    }
+      quantity,
+      style,
+      provider: requestedProvider,
+      mode,
+    } = parsed.data;
 
     // Use session from rate limit check above
     const userId = session?.user?.id;

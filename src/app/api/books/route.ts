@@ -1,6 +1,7 @@
 // API Route for Book Management
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { validateBody, createBookSchema } from '@/lib/validations';
 
 // Get all books
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
       },
       orderBy: { updatedAt: 'desc' },
     });
-    
+
     return NextResponse.json({ books });
   } catch (error) {
     console.error('Failed to fetch books:', error);
@@ -27,28 +28,22 @@ export async function GET() {
 // Create new book
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { title, subtitle, theme, ageGroup, trimSize = '8.5x11' } = body;
-    
-    if (!title) {
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      );
-    }
-    
+    // Validate input
+    const parsed = await validateBody(request, createBookSchema);
+    if (parsed.error) return parsed.error;
+
+    const { title, theme, ageGroup, description } = parsed.data;
+
     const book = await prisma.book.create({
       data: {
         title,
-        subtitle,
         theme,
         ageGroup,
-        trimSize,
         status: 'draft',
         pageCount: 0,
       },
     });
-    
+
     return NextResponse.json({ book });
   } catch (error) {
     console.error('Failed to create book:', error);

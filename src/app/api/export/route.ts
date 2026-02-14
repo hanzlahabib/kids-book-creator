@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { exportLimiter, checkRateLimit } from '@/lib/rate-limit';
+import { validateBody, exportSchema } from '@/lib/validations';
 import { generateInteriorPDF, generateCoverPDF, generateFullExport } from '@/services/pdf';
 import type { TrimSize } from '@/types';
 import JSZip from 'jszip';
@@ -15,23 +16,19 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = await checkRateLimit(exportLimiter, 5, identifier);
     if (rateLimitResponse) return rateLimitResponse;
 
-    const body = await request.json();
+    // Validate input
+    const parsed = await validateBody(request, exportSchema);
+    if (parsed.error) return parsed.error;
+
     const {
       bookId,
-      trimSize = '8.5x11',
-      includePageNumbers = true,
-      includeCover = true,
+      trimSize,
+      includePageNumbers,
+      includeCover,
       coverTitle,
-      coverAuthor = 'Activity Books',
+      coverAuthor,
       coverBackText,
-    } = body;
-
-    if (!bookId) {
-      return NextResponse.json(
-        { error: 'bookId is required' },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     // Fetch book with pages
     const book = await prisma.book.findUnique({
